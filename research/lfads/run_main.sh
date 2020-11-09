@@ -82,7 +82,7 @@ configname=$(python $neurocaasrootdir/ncap_utils/yamltojson.py "$userhome"/"$con
 ## Custom bulk processing.
 cd /home/ubuntu/models/research/lfads # going to script directory
 
-export export PYTHONPATH=$PYTHONPATH:/home/ubuntu/models/research/lfads/
+export PYTHONPATH=$PYTHONPATH:/home/ubuntu/models/research/lfads/
 
 cd synth_data
 
