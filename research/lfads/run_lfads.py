@@ -496,7 +496,7 @@ def jsonify_dict(d):
   return d2
 
 
-def build_hyperparameter_dict(flags):
+def build_hyperparameter_dict(configname, output_loc):
   """Simple script for saving hyper parameters.  Under the hood the
   flags structure isn't a dictionary, so it has to be simplified since we
   want to be able to view file as text.
@@ -507,9 +507,85 @@ def build_hyperparameter_dict(flags):
   Returns:
     dictionary of hyper parameters (ignoring other flag types).
   """
+  configparams = yaml.load(open(configname, 'r'), Loader=yaml.FullLoader)
+  try:
+    flags.output_dist = configparams["output_dist"]
+    flags.data_dir = configparams["data_dir"]
+    flags.lfads_save_dir = output_loc
+    flags.checkpoint_pb_load_name = configparams["checkpoint_pb_load_name"]
+    flags.checkpoint_name = configparams["checkpoint_name"]
+    flags.output_filename_stem = configparams["output_filename_stem"]
+    flags.max_ckpt_to_keep = configparams["max_ckpt_to_keep"]
+    flags.max_ckpt_to_keep_lve = configparams["max_ckpt_to_keep_lve"]
+    flags.ps_nexamples_to_process = configparams["ps_nexamples_to_process"]
+    flags.ext_input_dim = configparams["ext_input_dim"]
+    flags.data_filename_stem =configparams["data_filename_stem"]
+    flags.device = configparams["device"]
+    flags.csv_log = configparams["csv_log"]
+    flags.num_steps_for_gen_ic = configparams["num_steps_for_gen_ic"]
+    flags.inject_ext_input_to_gen = configparams["inject_ext_input_to_gen"]
+    # Cell
+    flags.cell_weight_scale = configparams["cell_weight_scale"]
+    # Generation
+    flags.ic_dim = configparams["ic_dim"]
+    flags.factors_dim = configparams["factors_dim"]
+    flags.ic_enc_dim = configparams["ic_enc_dim"]
+    flags.gen_dim = configparams["gen_dim"]
+    flags.gen_cell_input_weight_scale = configparams["gen_cell_input_weight_scale"]
+    flags.gen_cell_rec_weight_scale = configparams["gen_cell_rec_weight_scale"]
+    # KL distributions
+    flags.ic_prior_var_min = configparams["ic_prior_var_min"]
+    flags.ic_prior_var_scale = configparams["ic_prior_var_scale"]
+    flags.ic_prior_var_max = configparams["ic_prior_var_max"]
+    flags.ic_post_var_min = configparams["ic_post_var_min"]
+    flags.co_prior_var_scale = configparams["co_prior_var_scale"]
+    flags.prior_ar_atau = configparams["prior_ar_atau"]
+    flags.prior_ar_nvar = configparams["prior_ar_nvar"]
+    flags.do_train_prior_ar_atau = configparams["do_train_prior_ar_atau"]
+    flags.do_train_prior_ar_nvar = configparams["do_train_prior_ar_nvar"]
+    # Controller
+    flags.do_causal_controller = configparams["do_causal_controller"]
+    flags.controller_input_lag = configparams["controller_input_lag"]
+    flags.do_feed_factors_to_controller = configparams["do_feed_factors_to_controller"]
+    flags.feedback_factors_or_rates = configparams["feedback_factors_or_rates"]
+    flags.co_dim = configparams["co_dim"]
+    flags.ci_enc_dim = configparams["ci_enc_dim"]
+    flags.con_dim = configparams["con_dim"]
+    flags.co_mean_corr_scale = configparams["co_mean_corr_scale"]
+    # Optimization
+    flags.batch_size = configparams["batch_size"]
+    flags.learning_rate_init = configparams["learning_rate_init"]
+    flags.learning_rate_decay_factor = configparams["learning_rate_decay_factor"]
+    flags.learning_rate_stop = configparams["learning_rate_stop"]
+    flags.learning_rate_n_to_compare = configparams["learning_rate_n_to_compare"]
+    flags.max_grad_norm = configparams["max_grad_norm"]
+    flags.cell_clip_value = configparams["cell_clip_value"]
+    flags.do_train_io_only = configparams["do_train_io_only"]
+    flags.do_train_encoder_only = configparams["do_train_encoder_only"]
+    flags.do_reset_learning_rate = configparams["do_reset_learning_rate"]
+    flags.do_train_readin = configparams["do_train_readin"]
+
+    # Overfitting
+    flags.keep_prob = configparams["keep_prob"]
+    flags.temporal_spike_jitter_width = configparams["temporal_spike_jitter_width"]
+    flags.l2_gen_scale = configparams["l2_gen_scale"]
+    flags.l2_con_scale = configparams["l2_con_scale"]
+    # Underfitting
+    flags.kl_ic_weight = configparams["kl_ic_weight"]
+    flags.kl_co_weight = configparams["kl_co_weight"]
+    flags.kl_start_step = configparams["kl_start_step"]
+    flags.kl_increase_steps = configparams["kl_increase_steps"]
+    flags.l2_start_step = configparams["l2_start_step"]
+    flags.l2_increase_steps = configparams["l2_increase_steps"]
+    #d['_clip_value'] = 80 # bounds the tf.exp to avoid INF
+    kind = configparams["kind"]
+  except Exception as e:
+      print("params not given")
+      raise OSError("params not given correctly")
   d = {}
   # Data
   d['output_dist'] = flags.output_dist
+  print(flags.output_dist)
   d['data_dir'] = flags.data_dir
   d['lfads_save_dir'] = flags.lfads_save_dir
   d['checkpoint_pb_load_name'] = flags.checkpoint_pb_load_name
@@ -579,7 +655,7 @@ def build_hyperparameter_dict(flags):
   d['l2_increase_steps'] = flags.l2_increase_steps
   d['_clip_value'] = 80 # bounds the tf.exp to avoid INF 
   
-  return d
+  return d, kind
 
 
 class hps_dict_to_obj(dict):
@@ -667,7 +743,6 @@ def write_model_samples(hps, datasets, dataset_name=None, output_fname=None):
     output_fname = output_fname + "model_runs_" + hps.kind
   if not dataset_name:
     dataset_name = datasets.keys()[0]
-  else:
     if dataset_name not in datasets.keys():
       raise ValueError("Invalid dataset name '%s'."%(dataset_name))
   model = build_model(hps, kind=hps.kind, datasets=datasets)
@@ -759,10 +834,19 @@ def load_datasets(data_dir, data_filename_stem):
 
 def main(_):
   """Get this whole shindig off the ground."""
-  d = build_hyperparameter_dict(FLAGS)
-  hps = hps_dict_to_obj(d)    # hyper parameters
-  kind = FLAGS.kind
+  #d = build_hyperparameter_dict(FLAGS)
+  #hps = hps_dict_to_obj(d)    # hyper parameters
+  
+  configname = sys.argv[1]
+  configstore = sys.argv[2]
+  input_file = sys.argv[3]
+  output_loc = sys.argv[4]
+  
+  d, kind = build_hyperparameter_dict(configname)
+  hps = hps_dict_to_obj(d)
+  
 
+ 
   # Read the data, if necessary.
   train_set = valid_set = None
   if kind in ["train", "posterior_sample_and_average", "posterior_push_mean",
