@@ -496,7 +496,7 @@ def jsonify_dict(d):
   return d2
 
 
-def build_hyperparameter_dict(configname, output_loc):
+def build_hyperparameter_dict(configname, output_loc, input_file):
   """Simple script for saving hyper parameters.  Under the hood the
   flags structure isn't a dictionary, so it has to be simplified since we
   want to be able to view file as text.
@@ -514,7 +514,7 @@ def build_hyperparameter_dict(configname, output_loc):
     flags.lfads_save_dir = output_loc
     flags.checkpoint_pb_load_name = configparams["checkpoint_pb_load_name"]
     flags.checkpoint_name = configparams["checkpoint_name"]
-    flags.output_filename_stem = configparams["output_filename_stem"]
+    flags.output_filename_stem = input_file
     flags.max_ckpt_to_keep = configparams["max_ckpt_to_keep"]
     flags.max_ckpt_to_keep_lve = configparams["max_ckpt_to_keep_lve"]
     flags.ps_nexamples_to_process = configparams["ps_nexamples_to_process"]
@@ -842,7 +842,7 @@ def main(_):
   input_file = sys.argv[3]
   output_loc = sys.argv[4]
   
-  d, kind = build_hyperparameter_dict(configname)
+  d, kind = build_hyperparameter_dict(configname, output_loc, input_file)
   hps = hps_dict_to_obj(d)
   
 
