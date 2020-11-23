@@ -514,13 +514,13 @@ def build_hyperparameter_dict(configname, output_loc, input_file):
     flags.lfads_save_dir = output_loc
     flags.checkpoint_pb_load_name = configparams["checkpoint_pb_load_name"]
     flags.checkpoint_name = configparams["checkpoint_name"]
-    flags.output_filename_stem = input_file
+    flags.output_filename_stem = configparams["output_filename_stem"]
     flags.max_ckpt_to_keep = configparams["max_ckpt_to_keep"]
     flags.max_ckpt_to_keep_lve = configparams["max_ckpt_to_keep_lve"]
     flags.ps_nexamples_to_process = configparams["ps_nexamples_to_process"]
     flags.ext_input_dim = configparams["ext_input_dim"]
     flags.data_filename_stem =configparams["data_filename_stem"]
-    flags.device = configparams["device"]
+    flags.device = "gpu:0"
     flags.csv_log = configparams["csv_log"]
     flags.num_steps_for_gen_ic = configparams["num_steps_for_gen_ic"]
     flags.inject_ext_input_to_gen = configparams["inject_ext_input_to_gen"]
